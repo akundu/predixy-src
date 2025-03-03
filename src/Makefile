@@ -79,14 +79,14 @@ objs = Crc16.o HashFunc.o Timer.o Logger.o LogFileSink.o \
 all: $(target)
 
 $(target): $(objs)
-    $(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 debug:
-    @$(MAKE) LVL=-g
+	@$(MAKE) LVL=-g
 
 clean:
-    @rm -rf $(objs) $(target)
-    @echo "Clean complete."
+	@rm -rf $(objs) $(target)
+	@echo "Clean complete."
 
 %.o: %.cpp
-    $(CXX) $(CFLAGS) -c $^ $(INCFLAGS)
+	$(CXX) $(CFLAGS) -c $^ $(INCFLAGS)
