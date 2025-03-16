@@ -9,17 +9,17 @@ MAKE := $(if $(filter $(PLATFORM),FreeBSD OpenBSD),gmake,make)
 BINDIR := bin
 
 # Default target
-all: create_dirs build
+all: build
 
 # Create necessary directories
 create_dirs:
 	@mkdir -p $(BINDIR)
 
 # Build targets
-build:
+build:	create_dirs
 	@$(MAKE) -C src -f Makefile BINDIR=../$(BINDIR)
 
-debug:
+debug:	create_dirs
 	@$(MAKE) -C src -f Makefile debug BINDIR=../$(BINDIR)
 
 # Clean target
