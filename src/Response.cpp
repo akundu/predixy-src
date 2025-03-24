@@ -69,6 +69,7 @@ Response::Response(GenericCode code):
 
 Response::~Response()
 {
+    logDebug("Response::~Response() %p", this);
 }
 
 void Response::set(const ResponseParser& p)
@@ -86,13 +87,17 @@ void Response::set(int64_t num)
     mRes.fset(nullptr, ":%ld\r\n", num);
 }
 
-void Response::setStr(const char* str, int len)
+void Response::setStr(const char* str, int len, bool addSize)
 {
     mType = Reply::String;
     if (len < 0) {
         len = strlen(str);
     }
-    mRes.fset(nullptr, "$%d\r\n%.*s\r\n", len, len, str);
+    if (addSize) {
+        mRes.fset(nullptr, "$%d\r\n%.*s\r\n", len, len, str);
+    } else {
+        mRes.fset(nullptr, "%.*s", len, str);
+    }
 }
 
 void Response::setErr(const char* str, int len)

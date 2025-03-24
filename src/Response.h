@@ -50,7 +50,7 @@ public:
     ~Response();
     void set(const ResponseParser& p);
     void set(int64_t num);
-    void setStr(const char* str, int len = -1);
+    void setStr(const char* str, int len = -1, bool addSize=true);
     void setErr(const char* str, int len = -1);
     void adjustForLeader(Request* req);
     bool send(Socket* s);
