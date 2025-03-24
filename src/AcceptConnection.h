@@ -32,10 +32,10 @@ public:
     typedef Alloc<AcceptConnection, Const::AcceptConnectionAllocCacheSize> Allocator;
 public:
     AcceptConnection(int fd, sockaddr* addr, socklen_t len);
-    ~AcceptConnection();
+    virtual ~AcceptConnection();
     void close();
     bool writeEvent(Handler* h);
-    void readEvent(Handler* h);
+    virtual void readEvent(Handler* h);
     bool send(Handler* h, Request* req, Response* res);
     long lastActiveTime() const
     {
@@ -81,11 +81,27 @@ public:
     {
         mRequests.push_back(req);
     }
-private:
-    void parse(Handler* h, Buffer* buf, int pos);
+    bool isCloseASAP() const
+    {
+        return mCloseASAP;
+    }
+    bool isEchoConnection() const
+    {
+        return mIsEchoConnection;
+    }
+    void setEchoConnection(bool v)
+    {
+        mIsEchoConnection = v;
+    }
+    RequestParser *getParser()
+    {
+        return &mParser;
+    }
+protected:
+    virtual void parse(Handler* h, Buffer* buf, int pos);
     int fill(Handler* h, IOVec* bufs, int len);
     bool write(Handler* h, IOVec* bufs, int len);
-private:
+protected:
     RequestParser mParser;
     RecvRequestList mRequests;
     RequestPtr mReqLeader;
@@ -94,6 +110,8 @@ private:
     ConnectConnection* mConnectConnection;
     long mLastActiveTime; //steady us
     bool mBlockRequest;
+    bool mCloseASAP;
+    bool mIsEchoConnection;
 };
 
 typedef List<AcceptConnection> AcceptConnectionList;

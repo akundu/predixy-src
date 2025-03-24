@@ -16,6 +16,7 @@ Command Command::CmdPool[AvailableCommands] = {
     {Ping,              "ping",             1,  2,         Read},
     {PingServ,          "ping",             1,  2,         Inner},
     {Echo,              "echo",             2,  2,         Read},
+    {EchoText,          "echotext",         1,  MaxArgs,   Read},
     {Auth,              "auth",             2,  2,         Read},
     {AuthServ,          "auth",             2,  2,         Inner},
     {Select,            "select",           2,  2,         Read},

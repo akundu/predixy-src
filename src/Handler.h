@@ -87,7 +87,8 @@ private:
     void addPostEvent(ConnectConnection* c, int evts);
     void postEvent();
     void handleListenEvent(ListenSocket* s, int evts);
-    void addAcceptSocket(int c, sockaddr* addr, socklen_t len);
+    void handleEchoConnectionEvent(AcceptConnection *c, int evts);
+    void addAcceptSocket(int c, sockaddr *addr, socklen_t len, const char *type);
     void handleAcceptConnectionEvent(AcceptConnection* c, int evts);
     void handleConnectConnectionEvent(ConnectConnection* c, int evts);
     void postAcceptConnectionEvent();

@@ -23,6 +23,7 @@ public:
         Ping,
         PingServ,
         Echo,
+        EchoText,
         Auth,
         AuthServ,
         Select,

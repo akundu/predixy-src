@@ -24,6 +24,12 @@ public:
     {
         return mAddr;
     }
+    const char* getType() const
+    {
+        return type;
+    }
+protected:
+    char type[32];
 private:
     char mAddr[128];
 };

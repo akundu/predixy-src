@@ -65,12 +65,12 @@ target = $(BINDIR)/predixy
 objs = Crc16.o HashFunc.o Timer.o Logger.o LogFileSink.o \
        Alloc.o Socket.o ListenSocket.o AcceptSocket.o \
        ConnectSocket.o $(multiplexor).o Subscribe.o \
-       Connection.o AcceptConnection.o ConnectConnection.o \
+       Connection.o AcceptConnection.o EchoAcceptConnection.o ConnectConnection.o \
        Buffer.o Command.o Distribution.o Enums.o Reply.o \
        ConfParser.o Conf.o Auth.o DC.o LatencyMonitor.o \
        RequestParser.o Request.o ResponseParser.o Response.o \
        Server.o ServerGroup.o ServerPool.o ClusterNodesParser.o \
-       ClusterServerPool.o StandaloneServerPool.o \
+       ClusterServerPool.o StandaloneServerPool.o EchoListenSocket.o \
        ConnectConnectionPool.o Handler.o Proxy.o main.o
 
 # Build rules

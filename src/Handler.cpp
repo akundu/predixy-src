@@ -15,8 +15,10 @@
 #include "Handler.h"
 #include "Proxy.h"
 #include "ListenSocket.h"
+#include "EchoListenSocket.h"
 #include "ServerGroup.h"
 #include "AcceptConnection.h"
+#include "EchoAcceptConnection.h"
 #include "ConnectConnection.h"
 #include "ClusterServerPool.h"
 #include "SentinelServerPool.h"
@@ -33,6 +35,12 @@ Handler::Handler(Proxy* p):
         logError("handler %d add listener to multiplexor fail:%sa",
                  id(), StrError());
         Throw(AddListenerEventFail, "handler %d add listener to multiplexor fail:%sa",
+                 id(), StrError());
+    }
+    if (p->echoListener() && !mEventLoop->addSocket(p->echoListener())) {
+        logError("handler %d add echo listener to multiplexor fail:%sa",
+                 id(), StrError());
+        Throw(AddListenerEventFail, "handler %d add echo listener to multiplexor fail:%sa",
                  id(), StrError());
     }
     mConnPool.reserve(Const::MaxServNum);
@@ -141,7 +149,14 @@ void Handler::handleEvent(Socket* s, int evts)
         handleListenEvent(static_cast<ListenSocket*>(s), evts);
         break;
     case Connection::AcceptType:
-        handleAcceptConnectionEvent(static_cast<AcceptConnection*>(s),evts);
+        {
+            AcceptConnection* ac = static_cast<AcceptConnection*>(s);
+            if (ac->isEchoConnection()) {
+                handleEchoConnectionEvent(ac, evts);
+            } else {
+                handleAcceptConnectionEvent(ac, evts);
+            }
+        }
         break;
     case Connection::ConnectType:
         handleConnectConnectionEvent(static_cast<ConnectConnection*>(s),evts);
@@ -297,7 +312,7 @@ void Handler::handleListenEvent(ListenSocket* s, int evts)
             int fd = s->accept((sockaddr*)&addr, &len);
             if (fd >= 0) {
                 ++mStats.accept;
-                addAcceptSocket(fd, (sockaddr*)&addr, len);
+                addAcceptSocket(fd, (sockaddr*)&addr, len, s->getType());
             } else {
                 break;
             }
@@ -311,12 +326,16 @@ void Handler::handleListenEvent(ListenSocket* s, int evts)
     }
 }
 
-void Handler::addAcceptSocket(int fd, sockaddr* addr, socklen_t len)
+void Handler::addAcceptSocket(int fd, sockaddr* addr, socklen_t len, const char* type)
 {
     FuncCallTimer();
     AcceptConnection* c = nullptr;
     try {
-        c = AcceptConnectionAlloc::create(fd, addr, len);
+        if (strcmp(type, ECHO_LISTEN_SOCKET_TYPE) == 0) {
+            c = EchoAcceptConnectionAlloc::create(fd, addr, len);
+        } else {
+            c = AcceptConnectionAlloc::create(fd, addr, len);
+        }
     } catch (ExceptionBase& e) {
         logWarn("h %d create connection for client %d fail %s",
                 id(), fd, e.what());
@@ -388,9 +407,11 @@ void Handler::handleAcceptConnectionEvent(AcceptConnection* c, int evts)
     }
     try {
         if (c->good() && (evts & Multiplexor::ReadEvent)) {
+            logError("debug reg read event");
             c->readEvent(this);
         }
         if (c->good() && (evts & Multiplexor::WriteEvent)) {
+            logError("debug reg write event");
             addPostEvent(c, Multiplexor::WriteEvent);
         }
     } catch (ExceptionBase& e) {
@@ -578,6 +599,10 @@ bool Handler::preHandleRequest(Request* req, const String& key)
             }
             handleResponse(nullptr, req, res);
         }
+        break;
+    case Command::EchoText:
+        // For EchoText, we already have the response string set in the response
+        handleResponse(nullptr, req, req->getResponse());
         return true;
     case Command::Select:
         {
@@ -774,6 +799,7 @@ void Handler::directResponse(Request* req, Response::GenericCode code, ConnectCo
 void Handler::handleResponse(ConnectConnection* s, Request* req, Response* res)
 {
     FuncCallTimer();
+
     SegmentStr<Const::MaxKeyLen> key(req->key());
     logDebug("h %d s %s %d req %ld %s %.*s res %ld %s",
             id(), (s ? s->peer() : "None"), (s ? s->fd() : -1),
@@ -1501,4 +1527,38 @@ bool Handler::permission(Request* req, const String& key, Response::GenericCode&
         return false;
     }
     return true;
+}
+
+void Handler::handleEchoConnectionEvent(AcceptConnection* c, int evts)
+{
+    //TODO: need to handle the read and write events
+    FuncCallTimer();
+    logVerb("h %d c %s %d ev %d", id(), c->peer(), c->fd(), evts);
+    if (c->lastActiveTime() < 0) {
+        c->setLastActiveTime(Util::elapsedUSec());
+        mAcceptConns.push_back(c);
+        ++mStats.clientConnections;
+    }
+    if (evts & Multiplexor::ErrorEvent) {
+        c->setStatus(AcceptConnection::EventError);
+    }
+    try {
+        if (c->good() && (evts & Multiplexor::ReadEvent)) {
+            logError("debug read event");
+            c->readEvent(this);
+        }
+        if (c->good() && (evts & Multiplexor::WriteEvent)) {
+            logError("debug write event");
+            addPostEvent(c, Multiplexor::WriteEvent);
+        }
+    } catch (ExceptionBase& e) {
+        logWarn("h %d c %s %d handle event %d exception %s",
+                id(), c->peer(), c->fd(), evts, e.what());
+        c->setStatus(AcceptConnection::ExceptError);
+    }
+    if (!c->good()) {
+        addPostEvent(c, Multiplexor::ErrorEvent);
+        logDebug("h %d c %s %d will be close with status %d %s",
+                id(), c->peer(), c->fd(), c->status(), c->statusStr());
+    }
 }
