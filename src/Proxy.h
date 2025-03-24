@@ -37,6 +37,10 @@ public:
     {
         return mListener;
     }
+    ListenSocket* echoListener() const
+    {
+        return mEchoListenSocket;
+    }
     const Authority* authority() const
     {
         return &mAuthority;
@@ -81,6 +85,7 @@ public:
 private:
     Conf* mConf;
     ListenSocket* mListener;
+    ListenSocket* mEchoListenSocket;
     Authority mAuthority;
     DataCenter* mDataCenter;
     std::vector<Handler*> mHandlers;

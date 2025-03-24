@@ -131,6 +131,7 @@ void Conf::setGlobal(const ConfParser::Node* node)
     for (auto p = node; p; p = p->next) {
         if (setStr(mName, "Name", p)) {
         } else if (setStr(mBind, "Bind", p)) {
+        } else if (setStr(mEchoBind, "EchoBind", p)) {
         } else if (setStr(mLocalDC, "LocalDC", p)) {
 #ifdef _PREDIXY_SINGLE_THREAD_
         } else if (setInt(mWorkerThreads, "WorkerThreads", p, 1, 1)) {

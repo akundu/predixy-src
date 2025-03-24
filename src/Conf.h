@@ -125,6 +125,18 @@ public:
     {
         return mBind.c_str();
     }
+    const std::string& bindStr() const
+    {
+        return mBind;
+    }
+    const char* echoBind() const
+    {
+        return mEchoBind.c_str();
+    }
+    const std::string& echoBindStr() const
+    {
+        return mEchoBind;
+    }
     int workerThreads() const
     {
         return mWorkerThreads;
@@ -219,6 +231,7 @@ private:
 private:
     std::string mName;
     std::string mBind;
+    std::string mEchoBind;
     int mWorkerThreads;
     long mMaxMemory;
     long mClientTimeout; //us

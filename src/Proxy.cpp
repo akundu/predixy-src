@@ -19,6 +19,9 @@
 #include "AcceptSocket.h"
 #include "RequestParser.h"
 #include "Backtrace.h"
+#include "Conf.h"
+#include "Logger.h"
+#include "EchoListenSocket.h"
 
 static bool Running = false;
 static bool Abort = false;
@@ -102,14 +105,24 @@ bool Proxy::init(int argc, char* argv[])
     }
 
     mLatencyMonitorSet.init(mConf->latencyMonitors());
-    ListenSocket* s = new ListenSocket(mConf->bind(), SOCK_STREAM);
-    if (!s->setNonBlock()) {
+    mListener = new ListenSocket(mConf->bind(), SOCK_STREAM, 0);
+    if (!mListener->setNonBlock()) {
         logError("proxy listener set nonblock fail:%s", StrError());
         Throw(InitFail, "listener set nonblock", StrError());
     }
-    s->listen();
-    mListener = s;
+    mListener->listen();
     logNotice("predixy listen in %s", mConf->bind());
+
+    if (!mConf->echoBindStr().empty()) {
+        mEchoListenSocket = new EchoListenSocket(mConf->echoBindStr().c_str());
+        if (!mEchoListenSocket->setNonBlock()) {
+            logError("proxy echo listener set nonblock fail:%s", StrError());
+            Throw(InitFail, "echo listener set nonblock", StrError());
+        }
+        mEchoListenSocket->listen();
+        logNotice("predixy echo listen in %s", mConf->echoBindStr().c_str());
+    }
+
     switch (mConf->serverPoolType()) {
     case ServerPool::Cluster:
         {
@@ -171,6 +184,9 @@ int Proxy::run()
     TimerPoint::report();
     if (*mConf->bind() == '/') {
         unlink(mConf->bind());
+    }
+    if (mEchoListenSocket && *mConf->echoBind() == '/') {
+        unlink(mConf->echoBind());
     }
     return 0;
 }
